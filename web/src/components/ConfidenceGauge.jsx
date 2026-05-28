@@ -5,17 +5,20 @@ export default function ConfidenceGauge({ probability, isEffusion }) {
   const color     = isEffusion ? '#ff6b6b' : '#00d4ff';
   const typeClass = isEffusion ? 'effusion' : 'normal';
   const label     = isEffusion ? '⚠️ TRÀN DỊCH MÀNG PHỔI' : '✅ BÌNH THƯỜNG';
+  
+  // Tính toán độ tin cậy thực sự của dự đoán (luôn >= 50%)
+  const confidence = isEffusion ? probability : 100 - probability;
 
   // Build SVG arc path (semicircle 180°)
   const arc = useMemo(() => {
     const cx = 120, cy = 110, r = 80;
-    const angle = (probability / 100) * 180;           // 0-180 deg
+    const angle = (confidence / 100) * 180;           // 0-180 deg
     const rad   = (Math.PI / 180) * (180 - angle);     // measure from left
     const ex    = cx + r * Math.cos(rad);
     const ey    = cy - r * Math.sin(rad);
     const large = angle > 90 ? 1 : 0;
     return `M ${cx - r} ${cy} A ${r} ${r} 0 ${large} 1 ${ex.toFixed(2)} ${ey.toFixed(2)}`;
-  }, [probability]);
+  }, [confidence]);
 
   return (
     <div className={`gauge-card ${typeClass}`}>
@@ -30,7 +33,7 @@ export default function ConfidenceGauge({ probability, isEffusion }) {
         {/* Center value */}
         <text x="120" y="98" textAnchor="middle"
           fontFamily="Inter,sans-serif" fontWeight="800" fontSize="30" fill={color}>
-          {probability.toFixed(1)}%
+          {confidence.toFixed(1)}%
         </text>
         <text x="120" y="116" textAnchor="middle"
           fontFamily="Inter,sans-serif" fontWeight="400" fontSize="11" fill="#5a7a9a">
