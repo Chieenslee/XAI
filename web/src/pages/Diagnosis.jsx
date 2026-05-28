@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import ConfidenceGauge from '../components/ConfidenceGauge';
+import toast from 'react-hot-toast';
+import ResultModal from '../components/ResultModal';
 
 export default function Diagnosis() {
   const [file, setFile] = useState(null);
@@ -7,6 +8,7 @@ export default function Diagnosis() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleFileChange = (e) => {
@@ -16,6 +18,7 @@ export default function Diagnosis() {
       setPreview(URL.createObjectURL(selectedFile));
       setResult(null);
       setError('');
+      setIsModalOpen(false);
     }
   };
 
@@ -27,6 +30,7 @@ export default function Diagnosis() {
       setPreview(URL.createObjectURL(droppedFile));
       setResult(null);
       setError('');
+      setIsModalOpen(false);
     }
   };
 
@@ -52,15 +56,33 @@ export default function Diagnosis() {
       
       const data = await res.json();
       setResult(data);
+      setIsModalOpen(true);
+      toast.success('Phân tích X-quang hoàn tất!');
     } catch (err) {
       setError(err.message || 'Lỗi kết nối Server FastAPI.');
+      toast.error('Phân tích thất bại!');
     } finally {
       setIsAnalyzing(false);
     }
   };
 
+  const resetAll = () => {
+    setFile(null);
+    setPreview('');
+    setResult(null);
+    setIsModalOpen(false);
+  };
+
   return (
-    <div className="page">
+    <div className="page" style={{ position: 'relative' }}>
+      
+      {/* Nút Xem lại nếu có kết quả nhưng Modal đang bị đóng */}
+      {result && !isModalOpen && (
+        <button className="review-btn" onClick={() => setIsModalOpen(true)}>
+          👁️ Xem lại Kết quả
+        </button>
+      )}
+
       <div className="page-header">
         <h1 className="page-title">🔬 Chẩn đoán Hình ảnh AI</h1>
         <p className="page-subtitle">Tải lên ảnh X-quang để nhận phân tích tức thì từ mô hình DenseNet-121</p>
@@ -138,30 +160,28 @@ export default function Diagnosis() {
               </div>
             )}
 
-            {result && (
-              <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
-                <ConfidenceGauge 
-                  probability={result.probability} 
-                  isEffusion={result.prediction === "Tràn dịch màng phổi"} 
-                />
-                
-                <div style={{ marginTop: '24px' }}>
-                  <div className="card-label">🧬 BẢN ĐỒ NHIỆT XAI (GRAD-CAM)</div>
-                  <div className="img-preview">
-                    <img src={`data:image/jpeg;base64,${result.heatmap_base64}`} alt="Heatmap" />
-                  </div>
-                  <div className="heatmap-legend">
-                    Vùng <span className="red">Đỏ-Cam</span> = AI tập trung cao nhất • Vùng <span className="blue">Xanh</span> = Ít liên quan
-                  </div>
-                </div>
-
-                <button className="analyze-btn" style={{ marginTop: '24px', background: 'rgba(255,255,255,0.05)', boxShadow: 'none' }} onClick={() => { setFile(null); setPreview(''); setResult(null); }}>
-                  🔄 Phân tích ảnh khác
+            {/* Trạng thái đã phân tích xong nhưng đóng Modal */}
+            {result && !isModalOpen && (
+              <div className="glass-card" style={{ textAlign: 'center', padding: '32px' }}>
+                <h3 style={{ color: '#00d4ff', marginBottom: '16px' }}>✅ Đã có Kết quả Phân tích</h3>
+                <button className="analyze-btn" onClick={() => setIsModalOpen(true)}>
+                  👁️ Mở lại Cửa sổ Kết quả
                 </button>
               </div>
             )}
+
           </div>
         </div>
+      )}
+
+      {/* Result Modal */}
+      {isModalOpen && result && (
+        <ResultModal 
+          result={result} 
+          preview={preview} 
+          onClose={() => setIsModalOpen(false)} 
+          onNext={resetAll}
+        />
       )}
     </div>
   );

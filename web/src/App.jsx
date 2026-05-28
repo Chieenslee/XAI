@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Diagnosis from './pages/Diagnosis';
@@ -10,6 +11,7 @@ function App() {
 
   return (
     <div className="layout">
+      <Toaster position="bottom-right" toastOptions={{ style: { background: '#081020', color: '#e0eaf4', border: '1px solid rgba(0,212,255,0.3)', borderRadius: '12px' } }} />
       <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} />
       <main className="main">
         {currentPage === 'dashboard' && <Dashboard />}
