@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+streamlit
+streamlit-option-menu # Hỗ trợ làm menu điều hướng đẹp mắt
+streamlit-lottie # Hỗ trợ thêm file animation Lottie (micro-animations)
+torch
+torchvision
+opencv-python
+matplotlib
+numpy
+pandas
+pillow
+grad-cam # Thư viện hỗ trợ sinh heatmap XAI
+python-multipart # Hỗ trợ upload file trong FastAPI
+scikit-learn
+tqdm # Hiển thị thanh tiến trình khi huấn luyện
