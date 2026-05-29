@@ -72,6 +72,37 @@ class XAIExplainer:
         heatmap_rgb = cv2.cvtColor(heatmap_bgr, cv2.COLOR_BGR2RGB)
         overlay = cv2.addWeighted(orig_uint8, 0.5, heatmap_rgb, 0.5, 0)
         
+        # Khoanh vùng nóng (heatmap >= 0.6) bằng viền đen
+        threshold = 0.6
+        mask = (cam_resized >= threshold).astype(np.uint8) * 255
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cv2.drawContours(overlay, contours, -1, (10, 10, 10), 4, lineType=cv2.LINE_AA)
+        
+        # Phân tích vị trí (Textual Explanation)
+        explanation = "Không phát hiện dấu hiệu bất thường rõ rệt."
+        if target_category == 1 or len(contours) > 0: # Effusion
+            # Tìm vùng có diện tích lớn nhất
+            if contours:
+                c = max(contours, key=cv2.contourArea)
+                M = cv2.moments(c)
+                if M["m00"] != 0:
+                    cX = int(M["m10"] / M["m00"])
+                    cY = int(M["m01"] / M["m00"])
+                    
+                    # Phân loại vị trí dựa trên tọa độ tâm (Chia ảnh làm 9 vùng 3x3)
+                    # Tuy nhiên với phổi, quan tâm: Trái/Phải và Trên/Dưới
+                    vertical_pos = "vùng đỉnh phổi"
+                    if cY > h * 2 / 3:
+                        vertical_pos = "vùng góc sườn hoành (đáy phổi)"
+                    elif cY > h / 3:
+                        vertical_pos = "vùng giữa phế trường"
+                        
+                    horizontal_pos = "trái" if cX > w / 2 else "phải" # X-quang: bên phải ảnh là phổi trái
+                    
+                    area_ratio = (cv2.contourArea(c) / (w * h)) * 100
+                    
+                    explanation = f"Mô hình phân tích ảnh phát hiện vùng cản quang bất thường tập trung tại {vertical_pos} bên {horizontal_pos}. Diện tích vùng tổn thương chiếm khoảng {area_ratio:.1f}% vùng khảo sát. Đặc điểm này phù hợp với dấu hiệu tụ dịch màng phổi."
+        
         logging.info("Sinh Heatmap thanh cong!")
-        return overlay
+        return overlay, explanation
 

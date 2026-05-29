@@ -2,6 +2,11 @@ import subprocess
 import sys
 import time
 import os
+import signal
+
+# Fix lỗi hiển thị Unicode (Emoji) trên Windows console
+if sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 def main():
     print("=====================================================")
@@ -17,9 +22,21 @@ def main():
         env=os.environ.copy()
     )
     
-    # Chờ 3 giây để mô hình AI kịp load vào VRAM
-    print("⏳ Đang tải mô hình học sâu vào bộ nhớ...")
-    time.sleep(3) 
+    # Chờ backend khởi động hoàn tất bằng cách kiểm tra cổng 8000
+    print("⏳ Đang tải mô hình học sâu vào bộ nhớ (Vui lòng đợi 5-10s)...")
+    import socket
+    start_time = time.time()
+    while True:
+        try:
+            with socket.create_connection(("127.0.0.1", 8000), timeout=1):
+                break
+        except (ConnectionRefusedError, socket.timeout, OSError):
+            if time.time() - start_time > 30:
+                print("❌ Lỗi: Backend không khởi động được sau 30 giây!")
+                break
+            time.sleep(1)
+            
+    print("✅ Mô hình AI đã tải xong!")
     
     # 2. Start Frontend React (Vite)
     print("🎨 [2/2] Đang khởi động Giao diện Web (React Vite)...")
@@ -39,8 +56,14 @@ def main():
         frontend_process.wait()
     except KeyboardInterrupt:
         print("\n🛑 Đang tắt toàn bộ hệ thống. Tạm biệt!")
-        backend_process.terminate()
-        frontend_process.terminate()
+        # Trên Windows, gửi CTRL_C_EVENT để tắt sạch uvicorn reload và các process con
+        try:
+            backend_process.send_signal(signal.CTRL_C_EVENT)
+            frontend_process.send_signal(signal.CTRL_C_EVENT)
+        except (AttributeError, ValueError):
+            backend_process.terminate()
+            frontend_process.terminate()
+
 
 if __name__ == "__main__":
     main()

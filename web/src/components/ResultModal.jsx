@@ -9,10 +9,11 @@ export default function ResultModal({ result, preview, onClose, onNext }) {
   const confidence = isEffusion ? result.probability : 100 - result.probability;
   const printRef = useRef();
 
-  // Tạo lời giải thích y khoa tự động
-  const explanation = isEffusion
+  // Sử dụng lời giải thích sinh động từ Backend (XAI Textual Explanation)
+  // Fallback về text tĩnh nếu backend cũ chưa hỗ trợ
+  const explanation = result.explanation || (isEffusion
     ? `Phân tích XAI Grad-CAM phát hiện dải mờ cản quang bất thường tập trung tại vùng góc sườn hoành (được đánh dấu màu Đỏ/Cam trên bản đồ nhiệt). Đây là dấu hiệu X-quang kinh điển của tụ dịch màng phổi. Mức độ rõ ràng của tổn thương đạt độ tin cậy ${confidence.toFixed(1)}%. Khuyến nghị siêu âm màng phổi để xác nhận lượng dịch.`
-    : `Không phát hiện vùng mờ bất thường hoặc bóng mờ cản quang tại lồng ngực. Các góc sườn hoành hai bên hiển thị sắc nét, vòm hoành bình thường. AI kết luận bệnh nhân không có dấu hiệu tràn dịch màng phổi với độ tin cậy ${confidence.toFixed(1)}%.`;
+    : `Không phát hiện vùng mờ bất thường hoặc bóng mờ cản quang tại lồng ngực. Các góc sườn hoành hai bên hiển thị sắc nét, vòm hoành bình thường. AI kết luận bệnh nhân không có dấu hiệu tràn dịch màng phổi với độ tin cậy ${confidence.toFixed(1)}%.`);
 
   const handleExportPDF = async () => {
     const toastId = toast.loading('Đang khởi tạo báo cáo PDF...');
@@ -63,6 +64,12 @@ export default function ResultModal({ result, preview, onClose, onNext }) {
                 <div className="card-label" style={{ marginBottom: '8px' }}>ẢNH X-QUANG GỐC</div>
                 <img src={preview} alt="Original X-Ray" className="modal-img" />
               </div>
+              {result.mask_base64 && (
+                <div className="modal-img-wrapper">
+                  <div className="card-label" style={{ marginBottom: '8px' }}>MASK PHÂN ĐOẠN (U-NET)</div>
+                  <img src={`data:image/jpeg;base64,${result.mask_base64}`} alt="Segmentation Mask" className="modal-img" />
+                </div>
+              )}
               <div className="modal-img-wrapper">
                 <div className="card-label" style={{ marginBottom: '8px' }}>BẢN ĐỒ NHIỆT (GRAD-CAM)</div>
                 <img src={`data:image/jpeg;base64,${result.heatmap_base64}`} alt="Heatmap" className="modal-img" />

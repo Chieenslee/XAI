@@ -4,6 +4,7 @@ import ResultModal from '../components/ResultModal';
 
 export default function Diagnosis() {
   const [file, setFile] = useState(null);
+  const [clinicalNote, setClinicalNote] = useState('');
   const [preview, setPreview] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
@@ -45,9 +46,12 @@ export default function Diagnosis() {
 
     const formData = new FormData();
     formData.append('file', file);
+    if (clinicalNote) {
+      formData.append('clinical_notes', clinicalNote);
+    }
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/predict', {
+      const res = await fetch('http://localhost:8000/predict', {
         method: 'POST',
         body: formData
       });
@@ -69,6 +73,7 @@ export default function Diagnosis() {
   const resetAll = () => {
     setFile(null);
     setPreview('');
+    setClinicalNote('');
     setResult(null);
     setIsModalOpen(false);
   };
@@ -105,6 +110,22 @@ export default function Diagnosis() {
         <div className="upload-icon">📂</div>
         <div className="upload-title">Kéo thả ảnh X-quang vào đây hoặc nhấn để chọn file</div>
         <div className="upload-sub">Hỗ trợ định dạng JPG, JPEG, PNG</div>
+      </div>
+
+      {/* Input text for Clinical Notes (PhoBERT) */}
+      <div className="glass-card" style={{ marginTop: '24px', padding: '24px' }}>
+        <h3 style={{ marginBottom: '12px', fontSize: '1.1rem', color: '#fff' }}>📝 Ghi chú Lâm sàng (Dữ liệu Đa phương thức cho PhoBERT)</h3>
+        <textarea
+          className="text-input"
+          placeholder="Nhập triệu chứng lâm sàng (VD: Bệnh nhân khó thở, ho khan về đêm...)"
+          value={clinicalNote}
+          onChange={(e) => setClinicalNote(e.target.value)}
+          style={{
+            width: '100%', minHeight: '80px', background: 'rgba(0,0,0,0.3)', 
+            border: '1px solid rgba(0, 212, 255, 0.3)', borderRadius: '8px', 
+            color: '#fff', padding: '12px', fontSize: '0.95rem'
+          }}
+        />
       </div>
 
       {preview && (

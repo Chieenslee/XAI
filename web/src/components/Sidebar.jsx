@@ -1,4 +1,4 @@
-export default function Sidebar({ currentPage, setCurrentPage }) {
+export default function Sidebar({ currentPage, setCurrentPage, onOpenLogs }) {
   const navs = [
     { id: 'dashboard', label: 'Bảng Điều khiển', icon: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /> },
     { id: 'diagnosis', label: 'Chẩn đoán AI', icon: <><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></> },
@@ -26,6 +26,13 @@ export default function Sidebar({ currentPage, setCurrentPage }) {
       </div>
 
       <div className="sidebar-footer">
+        <button 
+          onClick={onOpenLogs}
+          style={{ width: '100%', marginBottom: '16px', padding: '10px', background: 'rgba(162, 155, 254, 0.1)', color: '#a29bfe', border: '1px solid rgba(162, 155, 254, 0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Developer Logs
+        </button>
         <div className="status-row">
           <div className="status-dot"></div> Backend API Online
         </div>

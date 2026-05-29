@@ -13,8 +13,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torchxrayvision as xrv
 import torchvision.transforms as transforms
 from models.xai_gradcam import XAIExplainer
+from backend.ood_detector import OODDetector
+from backend.database import DatabaseHelper
 
 from fastapi.middleware.cors import CORSMiddleware
+
+# Fix Unicode encode error for prints on Windows
+if sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 app = FastAPI(
     title="Pleural Effusion XAI API",
@@ -35,6 +41,8 @@ model = None
 explainer = None
 preprocessor = None
 device = None
+ood_detector = None
+db = None
 
 @app.on_event("startup")
 async def load_model():
@@ -58,6 +66,12 @@ async def load_model():
     
     # 3. Load XAI Explainer
     explainer = XAIExplainer(model=model)
+    
+    # 4. Load System Components
+    global ood_detector, db
+    ood_detector = OODDetector()
+    db = DatabaseHelper()
+    
     print("Sẵn sàng phục vụ!")
 
 def image_to_base64(img_array: np.ndarray) -> str:
@@ -75,6 +89,17 @@ async def predict(file: UploadFile = File(...)):
     try:
         # 1. Đọc ảnh
         image_bytes = await file.read()
+        
+        # OOD Detection (Kiểm tra xem có phải ảnh X-quang không)
+        temp_path = "temp_upload.jpg"
+        with open(temp_path, "wb") as f:
+            f.write(image_bytes)
+        
+        if ood_detector.is_ood(temp_path):
+            os.remove(temp_path)
+            raise HTTPException(status_code=400, detail="Ảnh tải lên không hợp lệ. Vui lòng tải lên ảnh X-quang phổi trắng đen (Grayscale). Hệ thống từ chối ảnh tự nhiên (OOD).")
+        os.remove(temp_path)
+
         image = Image.open(io.BytesIO(image_bytes))
         
         # Lưu lại bản copy numpy array của ảnh RGB để vẽ heatmap (GIỮ NGUYÊN KÍCH THƯỚC GỐC)
@@ -103,7 +128,7 @@ async def predict(file: UploadFile = File(...)):
         probability = output[0][effusion_idx].item()
             
         # 4. Sinh Heatmap với XAI Grad-CAM
-        heatmap_img_np = explainer.generate_heatmap(input_tensor, orig_resized, target_category=effusion_idx)
+        heatmap_img_np, generated_explanation = explainer.generate_heatmap(input_tensor, orig_resized, target_category=effusion_idx)
         
         # Chuyển đổi kết quả
         heatmap_b64 = image_to_base64(heatmap_img_np)
@@ -118,14 +143,50 @@ async def predict(file: UploadFile = File(...)):
         else:
             display_prob = (probability / 0.0682) * 50.0
             
+        prediction_label = "Tràn dịch màng phổi" if is_effusion else "Bình thường"
+        
+        # Lưu vào Database
+        try:
+            db.insert_record(
+                patient_name="Bệnh nhân Ẩn danh",
+                clinical_notes="Không có",
+                image_path=file.filename,
+                mask_path="N/A",
+                heatmap_path="base64_data",
+                prediction_label=prediction_label,
+                confidence_score=round(display_prob, 2)
+            )
+        except Exception as e:
+            print(f"Lỗi khi lưu DB: {e}")
+            
         return {
             "success": True,
-            "prediction": "Tràn dịch màng phổi" if is_effusion else "Bình thường",
+            "prediction": prediction_label,
             "probability": round(display_prob, 2),
             "raw_probability": probability,
-            "heatmap_base64": heatmap_b64
+            "heatmap_base64": heatmap_b64,
+            "explanation": generated_explanation if is_effusion else "Hệ thống AI không phát hiện đám mờ cản quang bất thường. Các góc sườn hoành hai bên sắc nét, vòm hoành bình thường."
         }
         
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/history")
+async def get_history():
+    """API dành cho Developer/Admin để xem lịch sử hoạt động thời gian thực"""
+    try:
+        if db is None:
+            return {"success": False, "detail": "Database chưa được khởi tạo."}
+        
+        records = db.get_all_records()
+        # Ẩn bớt dữ liệu base64 dài dòng để tối ưu JSON response
+        for r in records:
+            if 'heatmap_path' in r and len(str(r['heatmap_path'])) > 100:
+                r['heatmap_path'] = "[BASE64_DATA_HIDDEN]"
+            if 'mask_path' in r and len(str(r['mask_path'])) > 100:
+                r['mask_path'] = "[BASE64_DATA_HIDDEN]"
+                
+        return {"success": True, "data": records}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
