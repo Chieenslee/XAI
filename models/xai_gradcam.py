@@ -52,25 +52,26 @@ class XAIExplainer:
         # Tính toán các đạo hàm bậc 1, bậc 2, bậc 3 để tối ưu hóa trọng số (alpha)
         # Giúp loại bỏ nhiễu và focus tốt hơn vào nhiều tổn thương cùng lúc
         
-        b, k, u, v = self.gradient.size()
-        
-        alpha_num = self.gradient.pow(2)
-        alpha_denom = self.gradient.pow(2).mul(2) + self.feature_map.mul(self.gradient.pow(3)).sum(dim=[2, 3], keepdim=True)
-        # Tránh chia cho 0
-        alpha_denom = torch.where(alpha_denom != 0.0, alpha_denom, torch.ones_like(alpha_denom))
-        
-        alphas = alpha_num.div(alpha_denom)
-        
-        # Chỉ lấy các gradient dương (hướng đóng góp tích cực vào class bệnh)
-        positive_gradients = torch.relu(score.exp() * self.gradient)
-        
-        # Tính trọng số mới
-        weights = (alphas * positive_gradients).sum(dim=[2, 3], keepdim=True)
-        
-        # Tính bản đồ nhiệt cuối cùng
-        cam = (weights * self.feature_map).sum(dim=1, keepdim=True)
-        cam = torch.relu(cam)
-        cam_np = cam.squeeze().cpu().numpy()
+        # Grad-CAM++: tất cả tính toán trong no_grad để tránh requires_grad lây sang cam
+        with torch.no_grad():
+            grad = self.gradient          # đã .detach() trong hook
+            fmap = self.feature_map       # đã .detach() trong hook
+
+            alpha_num   = grad.pow(2)
+            alpha_denom = grad.pow(2).mul(2) + fmap.mul(grad.pow(3)).sum(dim=[2, 3], keepdim=True)
+            # Tránh chia cho 0
+            alpha_denom = torch.where(alpha_denom != 0.0, alpha_denom, torch.ones_like(alpha_denom))
+            alphas = alpha_num.div(alpha_denom)
+
+            # Dùng score.detach() tránh graph lan sang, clamp trước exp() để không overflow
+            score_val = score.detach().clamp(-10, 10)
+            positive_gradients = torch.relu(score_val.exp() * grad)
+
+            weights = (alphas * positive_gradients).sum(dim=[2, 3], keepdim=True)
+
+            cam = (weights * fmap).sum(dim=1, keepdim=True)
+            cam = torch.relu(cam)
+            cam_np = cam.squeeze().cpu().numpy()
         
         cam_min, cam_max = cam_np.min(), cam_np.max()
         if cam_max - cam_min > 1e-8:
