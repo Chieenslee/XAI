@@ -34,7 +34,7 @@ class XAIExplainer:
         if self._bwd_handle:
             self._bwd_handle.remove()
 
-    def generate_heatmap(self, input_tensor, original_image_np, target_category=None):
+    def generate_heatmap(self, input_tensor, original_image_np, target_category=None, is_abnormal=True):
         input_req = input_tensor.detach().requires_grad_(True)
         self.model.zero_grad()
         output = self.model(input_req)
@@ -75,9 +75,16 @@ class XAIExplainer:
         heatmap_bgr = cv2.applyColorMap(np.uint8(255 * cam_smoothed), cv2.COLORMAP_JET)
         heatmap_rgb = cv2.cvtColor(heatmap_bgr, cv2.COLOR_BGR2RGB)
         
-        # Pha màu thông minh (Alpha Blending): Nơi nào cam_smoothed càng cao thì màu càng đậm
-        # Nơi nào cam_smoothed = 0 thì giữ nguyên 100% ảnh X-quang gốc (không bị ám xanh dương)
-        alpha = cam_smoothed[..., np.newaxis] * 0.55  # Độ đậm tối đa của Heatmap là 55%
+        # Pha màu thông minh (Alpha Blending)
+        if not is_abnormal:
+            # Nếu chẩn đoán là bình thường, không hiển thị Heatmap quá rực rỡ gây hiểu lầm
+            alpha_multiplier = 0.15 # Giảm mạnh độ sáng heatmap
+            heatmap_bgr = cv2.applyColorMap(np.uint8(255 * cam_smoothed), cv2.COLORMAP_WINTER) # Dùng màu dịu (cool)
+            heatmap_rgb = cv2.cvtColor(heatmap_bgr, cv2.COLOR_BGR2RGB)
+        else:
+            alpha_multiplier = 0.65 # Tăng nhẹ độ sáng heatmap nếu có bệnh
+            
+        alpha = cam_smoothed[..., np.newaxis] * alpha_multiplier
         overlay = (orig_uint8 * (1.0 - alpha) + heatmap_rgb * alpha).astype(np.uint8)
         
         # [BƯỚC 1] Lọc Contour (Chỉ lấy vùng lớn nhất, viền mỏng màu Cam)
@@ -95,7 +102,8 @@ class XAIExplainer:
                 if area > 100 and area >= max_area * 0.05:
                     valid_contours.append(c)
                     
-            cv2.drawContours(overlay, valid_contours, -1, (0, 165, 255), 2, lineType=cv2.LINE_AA)
+            if is_abnormal:
+                cv2.drawContours(overlay, valid_contours, -1, (0, 165, 255), 2, lineType=cv2.LINE_AA)
         
         # Phân tích vị trí (Textual Explanation)
         explanation = "Không phát hiện dấu hiệu bất thường rõ rệt."
@@ -110,17 +118,25 @@ class XAIExplainer:
                     
                     # Phân loại vị trí dựa trên tọa độ tâm (Chia ảnh làm 9 vùng 3x3)
                     # Tuy nhiên với phổi, quan tâm: Trái/Phải và Trên/Dưới
-                    vertical_pos = "vùng đỉnh phổi"
-                    if cY > h * 2 / 3:
-                        vertical_pos = "vùng góc sườn hoành (đáy phổi)"
-                    elif cY > h / 3:
-                        vertical_pos = "vùng giữa phế trường"
+                    # Tràn dịch màng phổi thường nằm ở đáy phổi
+                    vertical_pos = "đỉnh phổi"
+                    if cY > h * 0.6:
+                        vertical_pos = "góc sườn hoành (đáy phổi)"
+                    elif cY > h * 0.3:
+                        vertical_pos = "vùng rốn phổi / giữa phế trường"
                         
-                    horizontal_pos = "trái" if cX > w / 2 else "phải" # X-quang: bên phải ảnh là phổi trái
+                    # Trong ảnh X-quang thẳng, bên trái của bức ảnh là bên phải của bệnh nhân
+                    horizontal_pos = "trái" if cX > w / 2 else "phải"
                     
                     area_ratio = (cv2.contourArea(c) / (w * h)) * 100
                     
-                    explanation = f"Mô hình phân tích ảnh phát hiện vùng cản quang bất thường tập trung tại {vertical_pos} bên {horizontal_pos}. Diện tích vùng tổn thương chiếm khoảng {area_ratio:.1f}% vùng khảo sát. Đặc điểm này phù hợp với dấu hiệu tụ dịch màng phổi."
+                    if not is_abnormal:
+                        explanation = "Hệ thống AI không phát hiện đám mờ cản quang bất thường. Các góc sườn hoành hai bên sắc nét."
+                    else:
+                        explanation = f"Hệ thống phát hiện vùng mờ cản quang tập trung tại {vertical_pos} bên {horizontal_pos}. Diện tích tổn thương khoảng {area_ratio:.1f}%. Đặc điểm này phù hợp với tràn dịch màng phổi."
+                        if vertical_pos == "đỉnh phổi":
+                            explanation += " Tuy nhiên, vị trí này (đỉnh phổi) khá bất thường đối với tràn dịch thông thường, cần loại trừ các nguyên nhân khác (như dày dính màng phổi hoặc khối u)."
+
         
         logging.info("Sinh Heatmap thanh cong!")
         return overlay, explanation

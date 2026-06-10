@@ -164,7 +164,7 @@ def _predict_and_explain(input_tensor, orig_for_heatmap, effusion_idx):
 
         # Grad-CAM
         heatmap_img_np, generated_explanation = explainer.generate_heatmap(
-            input_tensor, orig_for_heatmap, target_category=effusion_idx
+            input_tensor, orig_for_heatmap, target_category=effusion_idx, is_abnormal=is_effusion
         )
         heatmap_b64 = _image_to_base64(heatmap_img_np)
 
