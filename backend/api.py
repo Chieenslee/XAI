@@ -429,14 +429,14 @@ async def clear_db():
     
     with db_lock:
         try:
-            conn = db._get_connection()
+            conn = db._connect()
             cursor = conn.cursor()
-            cursor.execute("SELECT COUNT(*) FROM patients")
-            count = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) as count FROM patient_records")
+            count = cursor.fetchone()['count']
             
-            cursor.execute("DELETE FROM patients")
+            cursor.execute("DELETE FROM patient_records")
             # Reset auto-increment
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='patients'")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='patient_records'")
             conn.commit()
             conn.close()
             return {"success": True, "deleted_count": count}
