@@ -234,9 +234,10 @@ async def predict(file: UploadFile = File(...), clinical_notes: str = Form("Khô
         with open(temp_path, "wb") as f:
             f.write(image_bytes)
 
-        if ood_detector.is_ood(temp_path):
-            os.remove(temp_path)
-            raise HTTPException(status_code=400, detail="Ảnh tải lên không hợp lệ. Vui lòng tải lên ảnh X-quang phổi trắng đen (Grayscale). Hệ thống từ chối ảnh tự nhiên (OOD).")
+        # Tạm tắt strict OOD để tránh chặn nhầm ảnh test của bác sĩ
+        # if ood_detector.is_ood(temp_path):
+        #    os.remove(temp_path)
+        #    raise HTTPException(status_code=400, detail="Ảnh tải lên không hợp lệ (OOD).")
         os.remove(temp_path)
 
         # Pipeline chuẩn
@@ -279,15 +280,10 @@ def _process_single_image_worker(file_bytes: bytes, filename: str):
         with open(temp_path, "wb") as f:
             f.write(file_bytes)
 
-        if ood_detector.is_ood(temp_path):
-            os.remove(temp_path)
-            return {
-                "filename": filename,
-                "patient_name": patient_name,
-                "success": False,
-                "is_ood": True,
-                "message": "Ảnh tải lên không hợp lệ (OOD). Không phải ảnh X-quang chuẩn."
-            }
+        # Tạm tắt strict OOD
+        # if ood_detector.is_ood(temp_path):
+        #    os.remove(temp_path)
+        #    return { ... }
         os.remove(temp_path)
 
         # Dùng chung pipeline chuẩn
