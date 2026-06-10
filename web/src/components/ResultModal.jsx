@@ -51,7 +51,12 @@ export default function ResultModal({ result, preview, onClose, onNext }) {
           <div className="modal-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div className="modal-logo">🩺 XAI Medical</div>
-              <h2 className="modal-title">BÁO CÁO CHẨN ĐOÁN HÌNH ẢNH</h2>
+              <div>
+                <h2 className="modal-title">BÁO CÁO CHẨN ĐOÁN HÌNH ẢNH</h2>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  📅 {new Date().toLocaleString('vi-VN')}
+                </div>
+              </div>
             </div>
             <div className={`modal-badge ${isEffusion ? 'effusion' : 'normal'}`}>
               {result.prediction.toUpperCase()} ({confidence.toFixed(1)}%)

@@ -3,6 +3,8 @@ import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Diagnosis from './pages/Diagnosis';
+import BatchDiagnosis from './pages/BatchDiagnosis';
+import CompareView from './pages/CompareView';
 import About from './pages/About';
 import DeveloperLogModal from './components/DeveloperLogModal';
 import './index.css';
@@ -18,6 +20,8 @@ function App() {
       <main className="main">
         {currentPage === 'dashboard' && <Dashboard />}
         {currentPage === 'diagnosis' && <Diagnosis />}
+        {currentPage === 'batch' && <BatchDiagnosis />}
+        {currentPage === 'compare' && <CompareView />}
         {currentPage === 'about' && <About />}
       </main>
 
