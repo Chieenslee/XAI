@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+.venv/
+
+# Node
+node_modules/
+dist/
+build/
+.npm/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data & Models
+*.zip
+*.pt
+*.pth
+data/
+real_test_data/
+Kaggle_Sample_Data/
+Doc/
+
+# IDE
+.vscode/
+.idea/
+.claude/
