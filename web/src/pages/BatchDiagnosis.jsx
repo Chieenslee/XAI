@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../utils/apiConfig';
 import { useState, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import jsPDF from 'jspdf';
@@ -30,7 +31,7 @@ export default function BatchDiagnosis() {
       files.forEach(file => formData.append('files', file));
 
       setProgress(30);
-      const response = await fetch('http://localhost:8000/predict_batch', {
+      const response = await fetch('${API_BASE_URL}/predict_batch', {
         method: 'POST',
         body: formData,
       });

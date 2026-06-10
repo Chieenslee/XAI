@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../utils/apiConfig';
 import { useState, useEffect, useRef } from 'react';
 import LungModel from '../components/LungModel';
 
@@ -36,8 +37,8 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         const [statsRes, healthRes] = await Promise.all([
-          fetch('http://localhost:8000/stats'),
-          fetch('http://localhost:8000/health')
+          fetch('${API_BASE_URL}/stats'),
+          fetch('${API_BASE_URL}/health')
         ]);
         if (statsRes.ok) setStats(await statsRes.json());
         if (healthRes.ok) setHealth(await healthRes.json());

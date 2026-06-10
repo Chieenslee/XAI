@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../utils/apiConfig';
 import { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import ResultModal from '../components/ResultModal';
@@ -51,7 +52,7 @@ export default function Diagnosis() {
     }
 
     try {
-      const res = await fetch('http://localhost:8000/predict', {
+      const res = await fetch('${API_BASE_URL}/predict', {
         method: 'POST',
         body: formData
       });
