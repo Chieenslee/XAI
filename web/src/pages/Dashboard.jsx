@@ -192,8 +192,8 @@ export default function Dashboard() {
           </div>
           <div>
             <div className="tech-item-label">XAI METHOD</div>
-            <div className="tech-item-value">Grad-CAM</div>
-            <div className="tech-item-sub">Feature Map + Gradient Hook</div>
+            <div className="tech-item-value" style={{color: '#ff9ff3', textShadow: '0 0 10px rgba(255,159,243,0.3)'}}>Grad-CAM++</div>
+            <div className="tech-item-sub">2nd-Order Gradient + Alpha Focus</div>
           </div>
           <div>
             <div className="tech-item-label">BACKEND / FRONTEND</div>

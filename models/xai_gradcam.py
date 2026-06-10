@@ -48,7 +48,26 @@ class XAIExplainer:
         if self.gradient is None or self.feature_map is None:
             raise RuntimeError("Hook không bắt được gradient hoặc feature map. Kiểm tra lại target_layer.")
             
-        weights = self.gradient.mean(dim=[2, 3], keepdim=True)
+        # 🚀 Cập nhật lên Grad-CAM++ (Cải thiện độ sắc nét và định vị)
+        # Tính toán các đạo hàm bậc 1, bậc 2, bậc 3 để tối ưu hóa trọng số (alpha)
+        # Giúp loại bỏ nhiễu và focus tốt hơn vào nhiều tổn thương cùng lúc
+        
+        b, k, u, v = self.gradient.size()
+        
+        alpha_num = self.gradient.pow(2)
+        alpha_denom = self.gradient.pow(2).mul(2) + self.feature_map.mul(self.gradient.pow(3)).sum(dim=[2, 3], keepdim=True)
+        # Tránh chia cho 0
+        alpha_denom = torch.where(alpha_denom != 0.0, alpha_denom, torch.ones_like(alpha_denom))
+        
+        alphas = alpha_num.div(alpha_denom)
+        
+        # Chỉ lấy các gradient dương (hướng đóng góp tích cực vào class bệnh)
+        positive_gradients = torch.relu(score.exp() * self.gradient)
+        
+        # Tính trọng số mới
+        weights = (alphas * positive_gradients).sum(dim=[2, 3], keepdim=True)
+        
+        # Tính bản đồ nhiệt cuối cùng
         cam = (weights * self.feature_map).sum(dim=1, keepdim=True)
         cam = torch.relu(cam)
         cam_np = cam.squeeze().cpu().numpy()

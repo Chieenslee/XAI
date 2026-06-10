@@ -215,7 +215,7 @@ export default function BatchDiagnosis() {
                           <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '20px', paddingTop: '12px' }}>
                             {r.heatmap_base64 && (
                               <div>
-                                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', letterSpacing: '1px' }}>BẢN ĐỒ NHIỆT (GRAD-CAM)</div>
+                                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', letterSpacing: '1px' }}>BẢN ĐỒ NHIỆT (GRAD-CAM++)</div>
                                 <img
                                   src={`data:image/jpeg;base64,${r.heatmap_base64}`}
                                   alt="Heatmap"

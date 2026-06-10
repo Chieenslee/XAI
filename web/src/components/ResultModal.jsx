@@ -76,7 +76,7 @@ export default function ResultModal({ result, preview, onClose, onNext }) {
                 </div>
               )}
               <div className="modal-img-wrapper">
-                <div className="card-label" style={{ marginBottom: '8px' }}>BẢN ĐỒ NHIỆT (GRAD-CAM)</div>
+                <div className="card-label" style={{ marginBottom: '8px' }}>BẢN ĐỒ NHIỆT (GRAD-CAM++)</div>
                 <img src={`data:image/jpeg;base64,${result.heatmap_base64}`} alt="Heatmap" className="modal-img" />
               </div>
             </div>
