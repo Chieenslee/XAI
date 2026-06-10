@@ -407,6 +407,43 @@ async def delete_record(record_id: int):
     return {"success": True, "message": f"Đã xóa bản ghi #{record_id}"}
 
 
+
+from fastapi.responses import FileResponse
+
+# ── Admin Operations (Backup / Cleanup) ──────────────────
+@app.get("/admin/backup-db")
+async def backup_db():
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database chưa khởi tạo.")
+    
+    db_path = db.db_path
+    if not os.path.exists(db_path):
+        raise HTTPException(status_code=404, detail="File DB không tồn tại.")
+        
+    return FileResponse(path=db_path, filename="patients_backup.db", media_type="application/octet-stream")
+
+@app.delete("/admin/clear-db")
+async def clear_db():
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database chưa khởi tạo.")
+    
+    with db_lock:
+        try:
+            conn = db._get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM patients")
+            count = cursor.fetchone()[0]
+            
+            cursor.execute("DELETE FROM patients")
+            # Reset auto-increment
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='patients'")
+            conn.commit()
+            conn.close()
+            return {"success": True, "deleted_count": count}
+        except Exception as e:
+            logger.error(f"Lỗi khi xóa DB: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
 # ── Main ─────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn

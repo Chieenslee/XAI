@@ -6,6 +6,8 @@ import Diagnosis from './pages/Diagnosis';
 import BatchDiagnosis from './pages/BatchDiagnosis';
 import CompareView from './pages/CompareView';
 import About from './pages/About';
+import Settings from './pages/Settings';
+
 import DeveloperLogModal from './components/DeveloperLogModal';
 import './index.css';
 
@@ -23,6 +25,7 @@ function App() {
         {currentPage === 'batch' && <BatchDiagnosis />}
         {currentPage === 'compare' && <CompareView />}
         {currentPage === 'about' && <About />}
+        {currentPage === 'settings' && <Settings />}
       </main>
 
       {showLogs && <DeveloperLogModal onClose={() => setShowLogs(false)} />}
