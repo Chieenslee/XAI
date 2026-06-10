@@ -52,7 +52,7 @@ export default function Diagnosis() {
     }
 
     try {
-      const res = await fetch('${API_BASE_URL}/predict', {
+      const res = await fetch(`${API_BASE_URL}/predict`, {
         method: 'POST',
         body: formData
       });

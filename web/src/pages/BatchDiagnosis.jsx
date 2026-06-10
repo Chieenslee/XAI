@@ -31,7 +31,7 @@ export default function BatchDiagnosis() {
       files.forEach(file => formData.append('files', file));
 
       setProgress(30);
-      const response = await fetch('${API_BASE_URL}/predict_batch', {
+      const response = await fetch(`${API_BASE_URL}/predict_batch`, {
         method: 'POST',
         body: formData,
       });
