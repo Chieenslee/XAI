@@ -8,12 +8,23 @@ import signal
 if sys.stdout.encoding.lower() != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 
+def get_project_python():
+    project_root = os.path.dirname(os.path.abspath(__file__))
+    if os.name == "nt":
+        venv_python = os.path.join(project_root, "venv", "Scripts", "python.exe")
+    else:
+        venv_python = os.path.join(project_root, "venv", "bin", "python")
+
+    return venv_python if os.path.exists(venv_python) else sys.executable
+
 def main():
     print("=====================================================")
     print("🚀 KHỞI ĐỘNG HỆ THỐNG TRỢ LÝ Y KHOA XAI - ANTIGRAVITY")
     print("=====================================================\n")
     
-    python_exe = sys.executable
+    python_exe = get_project_python()
+    if python_exe != sys.executable:
+        print(f"🐍 Sử dụng Python trong venv: {python_exe}")
     
     # 1. Start Backend FastAPI
     print("⏳ [1/2] Đang khởi động Não Bộ AI (FastAPI) tại cổng 8000...")
